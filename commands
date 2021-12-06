@@ -1,0 +1,61 @@
+Win подключение: 
+evil-winrm -i 10.10.10.203 -u robisl -p wolves11
+evil-winrm -i 192.168.128.61 -u  'domain\user'	
+
+rdesktop 10.0.101.15 -g 1280x768 -u LocalUser -p 'Pass'
+rdesktop 10.0.101.12 -g 1280x768 -u 'test\user1' -p 'Pass'
+
+
+Быстрые команды
+
+Убить процесс:
+taskkill /IM notepad.exe
+taskkill /PID [PID] /T
+
+wmic process where name="notepad.exe" call terminate
+wmic process where processid=[PID] delete
+
+Удалить службу
+sc stop UpdateService
+sc.exe config {SERVICENAME} start= disabled
+sc delete UpdateService
+
+BITSAdmin Persistence
+bitsadmin /list /allusers
+удаление:
+bitsadmin /reset /allusers
+import-module bitstransfer
+Get-BitsTransfer -AllUsers | Remove-BitsTransfer
+bitsadmin.exe /complete backdoor
+
+Планировщик:
+schtasks /delete /f /tn AdobeFlashSync
+
+Registry Run Keys
+Смотрим название ключа:
+reg query "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run"
+reg query "HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run"
+
+Удаление:
+reg delete "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run" /v MSUpdate /f
+reg delete "HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run" /v MSUpdate /f
+
+
+Startup Folder
+del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\startup_implant.exe"
+
+Logon Scripts
+Установка:
+reg query "HKEY_CURRENT_USER\Environment"
+Удаление:
+reg delete "HKEY_CURRENT_USER\Environment" /v UserInitMprLogonScript /f
+
+WMI Event Subscription
+Разведка:
+wmic /NAMESPACE:"\\root\subscription" PATH __EventFilter GET /format:list
+wmic /NAMESPACE:"\\root\subscription" PATH __EventConsumer GET /format:list
+wmic /NAMESPACE:"\\root\subscription" PATH __FilterToConsumerBinding GET /format:list
+Удаление:
+wmic /NAMESPACE:"\\root\subscription" PATH __FilterToConsumerBinding WHERE Filter="__EventFilter.Name='INFilter'" DELETE
+wmic /NAMESPACE:"\\root\subscription" PATH  __EventFilter WHERE Name="INFilter" DELETE
+wmic /NAMESPACE:"\\root\subscription" PATH CommandLineEventConsumer WHERE Name="INConsumer" DELETE
