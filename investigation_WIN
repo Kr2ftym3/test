@@ -1,0 +1,289 @@
+Расследование WIN
+----------------------------------
+Получение хеша
+
+Powershell Get-FileHash C:\Windows\System32\cscript.exe
+
+Просмотр файлов
+
+powershell Select-String -Path "'C:\Users\*\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\*.lnk'" -Pattern "exe"
+
+-----------------------------------
+
+Поиск WEB Shell
+
+ gci -path "C:\inetpub\wwwroot" -recurse -File -ea SilentlyContinue | Select-String -Pattern "runat" | FL
+
+gci -path "C:\inetpub\wwwroot" -recurse -File -ea SilentlyContinue | Select-String -Pattern "eval" | FL
+
+ProxyShell
+
+Get-WinEvent -FilterHashtable @{​​​​​LogName='MSExchange Management';}​​​​​​​​​​​​ | ? {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.Message -match 'MailboxExportRequest'}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ | FL TimeCreated, Message
+
+Get-WinEvent -FilterHashtable @{​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​LogName='MSExchange Management';}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ | ? {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.Message -match 'aspx'}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ | FL TimeCreated, Message
+
+------------------------------------
+
+Review Software Keys for malicious entries
+
+gci registry::HKLM\Software\*
+
+gci registry::HKU\*\Software\*
+
+gci registry::*\Software\Microsoft\Windows\CurrentVersion\*exe*
+
+--------------------------------------
+
+Поиск в реестре
+
+Get-ChildItem -path HKLM:\ -Recurse -ea SilentlyContinue | where {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.Name -match 'notepad' -or $_.Name -match 'sql'}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+Get-ChildItem -path HKLM:\ -Recurse -ea SilentlyContinue | get-itemproperty | where {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_ -match 'notepad' -or $_ -match 'sql'}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+reg query HKLM\SOFTWARE /s /f ".exe"
+
+reg query HKLM\SYSTEM /s /f ".exe"
+
+reg query HKLM\SECURITY /s /f ".exe"
+
+reg query HKLM /s /f ".exe"
+
+
+
+--------------------------------------
+
+Поиск неподписанных файлов
+
+gci C:\windows\*\*.exe -File -force |get-authenticodesignature|?{​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.IsOSBinary -notmatch 'True'}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+gci C:\PERSISTENCE\*.exe -File -Recurse -force |get-authenticodesignature|?{​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.IsOSBinary -notmatch 'True'}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ | findstr NotSigned
+
+рекурсия работает через жопу, лучше конкретные каталоги указывать. Вот рабочая:
+
+Get-ChildItem C:\users\*\*.exe -Recurse -ea SilentlyContinue | ForEach-object {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​Get-AuthenticodeSignature $_}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ -ea SilentlyContinue | Where-Object {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.status -eq "NotSigned"}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+----------------------------------
+
+Последние открытые документы:
+
+gci "REGISTRY::HKU\*\Software\Microsoft\Office\*\Word\Reading Locations\*"
+
+--------------------------------
+
+Установленные обновления
+
+wmic qfe
+
+-------------------------------
+
+Хеши запущенных процессов из директорий пользователя
+
+$A=((gps -Module -ea 0).FileName|Select-String "Appdata","ProgramData","Temp","Users","public"|sort|unique);foreach ($B in $A) {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​filehash $B}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​;
+
+$A=((gps).Path|Select-String "Appdata","ProgramData","Temp","Users","public"|sort|unique);foreach ($B in $A) {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​filehash $B}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​;
+
+Хеши всех процессов:
+
+FOR /F %i IN ('wmic process where "ExecutablePath is not null" get ExecutablePath') DO certutil -hashfile %i SHA256 | findstr -v : >> output.txt
+
+------------------------------
+
+! Получение хешей запущенных процессов из директорий "Appdata","ProgramData","Temp","Users","public"
+
+ 
+
+$A=((gps).Path|Select-String "Appdata","ProgramData","Temp","Users","public"|sort|unique);foreach ($B in $A) {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​filehash $B | Format-List}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+ 
+
+В файл:
+
+$A=((gps).Path|Select-String "Appdata","ProgramData","Temp","Users","public"|sort|unique);$C=foreach ($B in $A) {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​filehash $B | Format-List}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​;$C >> ACRC_DFIR\Susp_Process_Hash.txt
+
+------------------------------------
+
+Поиск неподписанных exe, dll
+
+Get-ChildItem C:\users\*.exe -Recurse -ea SilentlyContinue | ForEach-object {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​Get-AuthenticodeSignature $_ -ea SilentlyContinue}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ -ea SilentlyContinue | Where-Object {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.status -eq "NotSigned"}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ >> ACRC_DFIR\Not_signed_exe.txt
+
+Get-ChildItem C:\users\*.dll -Recurse -ea SilentlyContinue | ForEach-object {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​Get-AuthenticodeSignature $_ -ea SilentlyContinue}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ -ea SilentlyContinue | Where-Object {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.status -eq "NotSigned"}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ >> ACRC_DFIR\Not_signed_exe.txt
+
+Поиск неподписанных библиотек загруженных в процессы (выполняется долго)
+
+gps | select -exp modules -ea 0 | Select -exp FileName | Get-AuthenticodeSignature | ? Status -NE "Valid" | FL Path
+
+ 
+
+--------------------------------------
+
+Поиск файлов по датам создания, записи и т.д.
+
+ 
+
+Get-ChildItem C:\ -recurse -ea SilentlyContinue -force | where-object {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ $_.CreationTime.Date -match "12/25/2014"}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+Get-ChildItem C:\ -recurse -ea SilentlyContinue -force | where-object {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ $_.LastWriteTime -match "12/25/2014"}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+Get-ChildItem C:\ -recurse -ea SilentlyContinue -force | where-object {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ $_.CreationTime.Hour -gt 2 -and $_.CreationTime.Hour -lt 15}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+ 
+
+Поиск по размеру
+
+Files greater than a 10mb
+
+FOR /R C:\ %i in (*) do @if %~zi gtr 10000000 echo %i %~zi
+
+ 
+
+----------------------------------------
+
+Проверка хешей на VT (нужен апи ключ)
+
+ 
+
+foreach ($process in Get-WmiObject win32_process | where {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.ExecutablePath -notlike ""}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​) {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​Invoke-RestMethod -Method 'POST' -Uri 'https://www.virustotal.com/vtapi/v2/file/report' -Body @{​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ resource =(Get-FileHash $process.ExecutablePath | select Hash -ExpandProperty Hash); apikey = "[VTAPIKey]"}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+ 
+
+This query uses a 15 second timeout to ensure only 4 queries are submitted a minute
+
+foreach ($process in Get-WmiObject win32_process | where {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.ExecutablePath -notlike ""}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​) {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​Invoke-RestMethod -Method 'POST' -Uri 'https://www.virustotal.com/vtapi/v2/file/report' -Body @{​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ resource =(Get-FileHash $process.ExecutablePath | select Hash -ExpandProperty Hash); apikey = "[VTAPIKey]"}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​;Start-Sleep -Seconds 15;}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+ 
+
+This query uses a 15 second timeout to ensure only 4 queries are submitted a minute and only unique hashes are queried
+
+$A = $( foreach ($process in Get-WmiObject win32_process | where {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​$_.ExecutablePath -notlike ""}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​) {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​Get-FileHash $process.ExecutablePath | select Hash -ExpandProperty Hash}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​) |Sort-Object| Get-Unique -AsString; foreach ($process in $A) {​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​Invoke-RestMethod -Method 'POST' -Uri 'https://www.virustotal.com/vtapi/v2/file/report' -Body @{​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​ resource =($process); apikey = "[VTAPIKey]"}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​;Start-Sleep -Seconds 15;}​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+
+---------------------------------------
+
+Scan systems for IOA/IOC (Yara)
+
+Loki Scanner
+
+https://github.com/Neo23x0/Loki
+
+ 
+
+loki-upgrader.exe
+
+loki.exe -p [Directory]
+
+ 
+
+Crowdresponse Scanner
+
+https://www.crowdstrike.com/resources/community-tools/crowdresponse/
+
+CrowdResponse -v -i config.txt -o out.xml
+
+ 
+
+Yara
+
+https://github.com/virustotal/yara/releases/latest
+
+yara32.exe -d filename=[file defined in ruleset.yar] [ruleset.yar] [file to scan]
+
+yara32.exe -d filename=[svchost.exe] [ruleset.yar] -r [directory to scan]
+
+yara64.exe yararule.yar -r C:
+
+yara64.exe yararule.yar -r C: -f 2> $null
+
+----------------------------------------
+
+Дамп памяти процесса
+
+procdump -ma [processID]
+
+-----------------------------------------
+
+Routing table and ARP DNS cache
+
+route print
+
+arp -a
+
+Get-NetNeighboripconfig /displaydns
+
+Get-DnsClientCache | FT -AutoSize
+
+----------------------------------------
+
+Включение логирования Dns
+
+wevtutil set-log "Microsoft-Windows-DNS-Client/Operational" /enabled:true
+
+----------------------------------------
+
+Проверка групповых политик
+
+gpresult /Z /SCOPE COMPUTER
+
+gpresult /Z /SCOPE USER
+
+gpresult /R /SCOPE COMPUTER
+
+gpresult /R /SCOPE USER
+
+gpresult /r /z
+
+ls C:\Users\[username]\AppData\Local\GroupPolicy\DataStore
+
+ls C:\Windows\system32\GroupPolicy\DataStore
+
+---------------------------------------
+
+Выгрузка логов
+
+wevtutil epl System [Location]\System.evtx
+
+wevtutil epl Security [Location]\Security.evtx
+
+wevtutil epl Application [Location]\Application.evtx
+
+wevtutil epl "Windows PowerShell" [Location]\Powershell.evtx
+
+ 
+
+esentutl.exe /y /vss C:\Windows\System32\winevt\Logs\Security.evtx /d [Location]\Security.evtx
+
+XCOPY C:\Windows\System32\winevt\Logs [Location] /i
+
+XCOPY C:\WINDOWS\system32\LogFiles\ [Location] /i
+
+--------------------------------------
+
+Capture packets with netsh
+
+ netsh trace start persistent=yes capture=yes tracefile=c:\temp\packetcapture.etl
+
+netsh trace stop
+
+ 
+
+Capture Packets with PowerShell
+
+New-NetEventSession -Name "Capture" -CaptureMode SaveToFile -LocalFilePath "c:\temp\packetcapture.etl"
+
+Add-NetEventProvider -Name "Microsoft-Windows-TCPIP" -SessionName "Capture"
+
+Add-NetEventPacketCaptureProvider -SessionName "Capture"
+
+Start-NetEventSession -Name "Capture"
+
+Stop Capturing Packets with PowerShell
+
+Get-NetEventSession
+
+Stop-NetEventSession -Name Capture
+
+Remove-NetEventSession
+
+ 
+
+Convert ETL File to PCAP
+
+etl2pcapng.exe c:\temp\packetcapture.etl c:\temp\packetcapture.pcapng
