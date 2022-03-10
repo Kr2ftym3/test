@@ -1,1 +1,1 @@
-Powershell.exe -NoProfile -Exec Bypass New-Item -ItemType 'file' -Path 'C:\Users\n.strukov\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\logon.bat' -Value 'Powershell.exe -NoProfile -NonI -WindowStyle hidden -Exec Bypass ping 1.1.1.1'
+Powershell.exe -NoProfile -Exec Bypass New-Item -ItemType 'file' -Path 'C:\Users\LocalUser\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\logon.bat' -Value 'Powershell.exe -NoProfile -NonI -WindowStyle hidden -Exec Bypass ping 1.1.1.1'
